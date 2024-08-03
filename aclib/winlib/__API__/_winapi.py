@@ -175,6 +175,9 @@ def IsWindowMinimized(hwnd) -> bool:
 def IsWindowNormalized(hwnd) -> bool:
     return not IsWindowMaximized(hwnd) and not IsWindowMinimized(hwnd)
 
+def IsWindowTopMost(hwnd) -> bool:
+    return bool(GetWindowLong(hwnd, _wincon.GWL_EXSTYLE) & _wincon.WS_EX_TOPMOST)
+
 def CloseWindow(hwnd):
     SendMessage(hwnd, _wincon.WM_CLOSE, 0, 0)
 
@@ -204,6 +207,10 @@ def MinimizeWindow(hwnd):
 
 def NormalizeWindow(hwnd):
     _user32.ShowWindow(hwnd, _wincon.SW_SHOWNOACTIVATE)
+
+def SetWindowTopMost(hwnd, topmost: bool):
+    toparg = topmost and _wincon.HWND_TOPMOST or _wincon.HWND_NOTOPMOST
+    _user32.SetWindowPos(hwnd, toparg, 0, 0, 0, 0, _wincon.SWP_NOMOVE | _wincon.SWP_NOSIZE)
 # endregion
 
 # region ==> 窗口类型
