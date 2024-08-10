@@ -425,13 +425,17 @@ def GetThreadTimes(hthread, UTCdiff = +8) -> list[int]:
 
 # region ==> 消息循环线程
 # ==============================================================================================================
+_MSGLOOP_TASK_QUEUES: dict[int, list[tuple[function, tuple, dict, list]]] = {}
 def __msgloop_thread_(lpReady: list):
     msg = _wintype.MSG()
+    loopid = GetCurrentThreadId()
+    _MSGLOOP_TASK_QUEUES[loopid] = []
     lpReady.append(True)
     while GetMessageAndTransfer(msg):
-        if msg and msg.message == _wincon.WM_NULL and msg.wParam and msg.lParam:
-            sendertid, (task, args, kwargs, lpResponse) = msg.wParam, _ctypes.cast(msg.lParam, _ctypes.py_object).value
-            lpResponse.append(task(*args, **kwargs))
+        while _MSGLOOP_TASK_QUEUES[loopid]:
+            task = _MSGLOOP_TASK_QUEUES[loopid].pop(0)
+            func, args, kwargs, lpResponse = task
+            lpResponse.append(func(*args, **kwargs))
 
 def CreateMsgloopThread():
     ready = []
@@ -441,15 +445,20 @@ def CreateMsgloopThread():
     return loopthreadid
 
 def RequestMsgloopTask(func, loopthreadid, *args, **kwargs):
-    lpResponse = []
-    task = (func, args, kwargs, lpResponse)
-    PostThreadMessage(loopthreadid, _wincon.WM_NULL, GetCurrentThreadId(), id(task))
-    while not lpResponse:
-        _time.sleep(.001)
-    return lpResponse[0]
+    if loopthreadid in _MSGLOOP_TASK_QUEUES:
+        lpResponse = []
+        task = (func, args, kwargs, lpResponse)
+        _MSGLOOP_TASK_QUEUES[loopthreadid].append(task)
+        PostThreadMessage(loopthreadid, _wincon.WM_APP+1, GetCurrentThreadId(), GetCurrentThreadId())
+        while not lpResponse:
+            _time.sleep(.001)
+        return lpResponse[0]
+    return None
 
 def DestroyMsgloopThread(loopthreadid):
-    PostThreadMessage(loopthreadid, _wincon.WM_QUIT, 0, 0)
+    if loopthreadid in _MSGLOOP_TASK_QUEUES:
+        _MSGLOOP_TASK_QUEUES.pop(loopthreadid, None)
+        PostThreadMessage(loopthreadid, _wincon.WM_QUIT, 0, 0)
 # endregion
 
 # region ==> 窗口类管理

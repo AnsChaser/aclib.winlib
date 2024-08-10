@@ -5,7 +5,7 @@ with open('README.md', 'r', encoding='utf-8') as f:
 
 setup(
     name='aclib.winlib',
-    version='1.1.0',
+    version='1.1.1',
     author='AnsChaser',
     author_email='anschaser@163.com',
     description='pythonic win32api',
