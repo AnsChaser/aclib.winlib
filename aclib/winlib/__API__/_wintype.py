@@ -210,22 +210,14 @@ WINEVENTPROC = _ctypes.WINFUNCTYPE(None, HANDLE, DWORD, HWND, LONG, LONG, DWORD,
 
 # ==================== structure ====================
 class _Structure(_Structure):
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.__ref = None
-        self.__pointer = None
 
     @property
     def ref(self):
-        if self.__ref is None:
-            self.__ref = _ctypes.byref(self)
-        return self.__ref
+        return _ctypes.byref(self)
 
     @property
     def pointer(self):
-        if self.__pointer is None:
-            self.__pointer = _ctypes.pointer(self)
-        return self.__pointer
+        return _ctypes.pointer(self)
 
     def keys(self):
         for k, _ in self._fields_:
